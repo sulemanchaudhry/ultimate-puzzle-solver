@@ -10,8 +10,8 @@ case class Piece(name : String, top : EdgeShape, right : EdgeShape, bottom : Edg
                         rotateRight(this),
                         rotateRight(rotateRight(this)),
                         rotateRight(rotateRight(rotateRight(this))) )
-    val flipped  = rotated map {piece => flipHorizontal(piece)}
-    rotated ++ flipped
+//    val flipped  = rotated map {piece => flipHorizontal(piece)}
+    rotated
   }
   override def toString = s"Model(name=$name top=$top right=$right bottom=$bottom left=$left)"
 }
