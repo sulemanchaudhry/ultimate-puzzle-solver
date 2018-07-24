@@ -1,7 +1,9 @@
 package uk.org.chaudhry.suleman
 
 
-import java.io.{ File, PrintWriter }
+import java.io.{File, PrintWriter}
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 import uk.org.chaudhry.suleman.model.Edges.{EdgeShape, JoinDirection, LEFT_TO_RIGHT, TOP_TO_BOTTOM}
 import uk.org.chaudhry.suleman.model.{Edges, Piece}
@@ -96,19 +98,19 @@ object Main {
       new EdgeShape(Edges.ARROW2, Edges.OUT))
 
 
-    val grid2 : List[Piece] = List(piece8, piece2, pieceF, piece4)
+    val grid2 : List[List[Piece]] = List(piece8, piece2, pieceF, piece4).permutations.toList
     var filterFunction : List[List[Piece]] => List[List[Piece]] = filter2x2
 //     a list of all pieces available for the puzzle
-    var pieces: List[Piece] = grid2
+    var piecesList: List[List[Piece]] = grid2
 
-    // 3x3 is experimental
-    val grid3 : List[Piece] = List(piece8, piece2, piece6, pieceF, piece4, piece5, piece7, pieceC, pieceE)
+    // 3x3 is much slower; although solutiuons are generated
+    val grid3 : List[List[Piece]] = List(piece8, piece2, piece6, pieceF, piece4, piece5, piece7, pieceC, pieceE).permutations.toList
     filterFunction = filter3x3
-    pieces = grid3
+    piecesList = grid3
 
     // rotate each piece, which can be rotated three times
     // very naive approach; generate all possible combinations for checking
-    val pieceOptions : List[List[Piece]] = pieces map { piece => piece.permutationsOfPiece }
+    val pieceOptionList : List[List[List[Piece]]] = piecesList map { pieceList => pieceList map {element => element.permutationsOfPiece }}
 
     // ref https://stackoverflow.com/a/14740340
     implicit class Crossable[X](xs: Traversable[X]) {
@@ -132,21 +134,27 @@ object Main {
       }
     }
 
-      val allElements = crossFn(pieceOptions.head, pieceOptions.tail)
-      val allPieces : List[List[Piece]] = (allElements map (element => flattenTuple2(element.asInstanceOf[Tuple2[Any, Any]]))).toList
-    println(s"before call; elements to process:${allPieces.length}")
-      val filtered : List[List[Piece]] = filterFunction.apply(allPieces)
-    println(s"after call:${filtered.length}")
-//    })
+    val tempFi = File.createTempFile("ultimate-puzzle-solver",".txt")
+    println(s"Refer to ${tempFi.getAbsoluteFile} for results")
 
-
-   val tempFi = File.createTempFile("ultimate-puzzle-solver",".txt")
     val pw = new PrintWriter(tempFi)
-    filtered.foreach(matchList => matchList.foreach(matchElement => {
-      pw.write(matchElement+"\n")
-    }))
+
+    val matches : List[List[List[Piece]]]  = pieceOptionList.zipWithIndex.map(pieceOption => {
+      val allElements = crossFn(pieceOption._1.head, pieceOption._1.tail)
+      val allPieces : List[List[Piece]] = (allElements map (element => flattenTuple2(element.asInstanceOf[Tuple2[Any, Any]]))).toList
+      val filtered : List[List[Piece]] = filterFunction.apply(allPieces)
+      if (pieceOption._2%1000==0 || filtered.nonEmpty) println(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"))+" processed (%07d".format(1+pieceOption._2)+"/%07d".format(pieceOptionList.size)+"):"+s"${allPieces.length} to ${filtered.length}")
+      if (filtered.nonEmpty) {
+        pw.write("List{\n")
+        filtered.foreach(pieceList1 => pieceList1.foreach(piece=>pw.write(piece+"\n")))
+        pw.write("}\n")
+        pw.flush
+      }
+      filtered
+    })
+
+
     pw.close
-    println(s"${filtered.length} generated; refer to ${tempFi.getAbsoluteFile} for details")
   }
 
   def doPiecesJoin(pieces : List[Piece], position1 : Int, position2 : Int, direction : JoinDirection) : Boolean = {
