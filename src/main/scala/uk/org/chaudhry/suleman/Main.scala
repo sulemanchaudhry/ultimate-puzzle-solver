@@ -103,7 +103,7 @@ object Main {
 //     a list of all pieces available for the puzzle
     var piecesList: List[List[Piece]] = grid2
 
-    // 3x3 is much slower; although solutiuons are generated
+    // 3x3 is much slower; although solutions are generated
     val grid3 : List[List[Piece]] = List(piece8, piece2, piece6, pieceF, piece4, piece5, piece7, pieceC, pieceE).permutations.toList
     filterFunction = filter3x3
     piecesList = grid3
